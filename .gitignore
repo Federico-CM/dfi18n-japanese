@@ -1,0 +1,13 @@
+# Editor/OS temporary files
+*~
+*.swp
+*.swo
+.DS_Store
+
+# Local development files
+.vscode/
+.idea/
+
+# Python cache files, if tooling is added later
+__pycache__/
+*.pyc
