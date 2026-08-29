@@ -1,4 +1,3 @@
-```python
 #!/usr/bin/env python3
 """
 DFI18n Japanese localization validator.
