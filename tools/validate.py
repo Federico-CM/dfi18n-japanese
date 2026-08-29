@@ -1,3 +1,4 @@
+```python
 #!/usr/bin/env python3
 """
 DFI18n Japanese localization validator.
@@ -43,7 +44,12 @@ def validate_utf8(path: Path) -> tuple[str | None, list[Finding]]:
         return None, [Finding("ERROR", f"cannot read {path}: {exc}")]
 
     if raw.startswith(b"\xef\xbb\xbf"):
-        findings.append(Finding("ERROR", "UTF-8 BOM present; save as UTF-8 without BOM"))
+        findings.append(
+            Finding(
+                "ERROR",
+                "UTF-8 BOM present; save as UTF-8 without BOM",
+            )
+        )
 
     try:
         text = raw.decode("utf-8")
@@ -60,7 +66,8 @@ def validate_utf8(path: Path) -> tuple[str | None, list[Finding]]:
         findings.append(
             Finding(
                 "ERROR",
-                "contains Unicode replacement character U+FFFD, suggesting damaged text/mojibake",
+                "contains Unicode replacement character U+FFFD, "
+                "suggesting damaged text/mojibake",
             )
         )
 
@@ -79,17 +86,21 @@ def validate_tags(tags: str, record_num: int) -> list[Finding]:
         findings.append(
             Finding(
                 "ERROR",
-                f"malformed tags field {tags!r}; expected syntax such as [ALIGNMENT:CENTER]",
+                f"malformed tags field {tags!r}; "
+                "expected syntax such as [ALIGNMENT:CENTER]",
                 record_num,
             )
         )
         return findings
 
     # DFI18n extracts tags with a regex rather than requiring the whole field
-    # to consist exclusively of tags. For this project, flag leftover text.
-    consumed = "".join(match.group(0) for match in matches)
-    compact = re.sub(r"\s+", "", tags)
-    if consumed != compact:
+    # to consist exclusively of tags.
+    #
+    # For this project, permit whitespace outside valid tags, but flag any
+    # other unparsed content.
+    remaining = TAG_RE.sub("", tags)
+
+    if remaining.strip():
         findings.append(
             Finding(
                 "ERROR",
@@ -111,6 +122,7 @@ def validate_tags(tags: str, record_num: int) -> list[Finding]:
                     record_num,
                 )
             )
+
         seen_keys.add(key)
 
         if key == "ALIGNMENT":
@@ -118,7 +130,8 @@ def validate_tags(tags: str, record_num: int) -> list[Finding]:
                 findings.append(
                     Finding(
                         "ERROR",
-                        f"unknown ALIGNMENT value {value!r}; expected LEFT, RIGHT, or CENTER",
+                        f"unknown ALIGNMENT value {value!r}; "
+                        "expected LEFT, RIGHT, or CENTER",
                         record_num,
                     )
                 )
@@ -126,7 +139,8 @@ def validate_tags(tags: str, record_num: int) -> list[Finding]:
             findings.append(
                 Finding(
                     "WARNING",
-                    f"unknown tag {key!r}; DFI18n simple translation currently only consults ALIGNMENT",
+                    f"unknown tag {key!r}; "
+                    "DFI18n simple translation currently only consults ALIGNMENT",
                     record_num,
                 )
             )
@@ -146,25 +160,38 @@ def validate_simple_csv(path: Path) -> list[Finding]:
     try:
         rows = list(csv.reader(text.splitlines(keepends=True)))
     except csv.Error as exc:
-        findings.append(Finding("ERROR", f"invalid CSV: {exc}"))
+        findings.append(
+            Finding(
+                "ERROR",
+                f"invalid CSV: {exc}",
+            )
+        )
         return findings
 
     if not rows:
-        findings.append(Finding("ERROR", "CSV is empty"))
+        findings.append(
+            Finding(
+                "ERROR",
+                "CSV is empty",
+            )
+        )
         return findings
 
     header = rows[0]
+
     if header != EXPECTED_HEADER:
         findings.append(
             Finding(
                 "ERROR",
-                f"header is {header!r}; expected exactly {EXPECTED_HEADER!r}",
+                f"header is {header!r}; "
+                f"expected exactly {EXPECTED_HEADER!r}",
             )
         )
 
     seen: dict[str, tuple[int, str, str]] = {}
 
-    # csv record 1 is the header. Data begins at logical record 2.
+    # CSV record 1 is the header.
+    # Data begins at logical record 2.
     for record_num, row in enumerate(rows[1:], start=2):
         if len(row) != 3:
             findings.append(
@@ -179,13 +206,20 @@ def validate_simple_csv(path: Path) -> list[Finding]:
         source, translation, tags = row
 
         if source == "":
-            findings.append(Finding("ERROR", "source text is empty", record_num))
+            findings.append(
+                Finding(
+                    "ERROR",
+                    "source text is empty",
+                    record_num,
+                )
+            )
 
         if translation == "":
             findings.append(
                 Finding(
                     "WARNING",
-                    "translation is empty; verify that deleting the source text is intentional",
+                    "translation is empty; verify that deleting the source text "
+                    "is intentional",
                     record_num,
                 )
             )
@@ -194,12 +228,17 @@ def validate_simple_csv(path: Path) -> list[Finding]:
             findings.append(
                 Finding(
                     "WARNING",
-                    "source has leading/trailing whitespace; DFI18n simple matching is exact, so verify it is intentional",
+                    "source has leading/trailing whitespace; "
+                    "DFI18n simple matching is exact, so verify it is intentional",
                     record_num,
                 )
             )
 
-        if "\ufffd" in source or "\ufffd" in translation or "\ufffd" in tags:
+        if (
+            "\ufffd" in source
+            or "\ufffd" in translation
+            or "\ufffd" in tags
+        ):
             findings.append(
                 Finding(
                     "ERROR",
@@ -208,16 +247,24 @@ def validate_simple_csv(path: Path) -> list[Finding]:
                 )
             )
 
-        findings.extend(validate_tags(tags, record_num))
+        findings.extend(
+            validate_tags(
+                tags,
+                record_num,
+            )
+        )
 
         previous = seen.get(source)
+
         if previous is not None:
             old_record, old_translation, old_tags = previous
+
             if (translation, tags) == (old_translation, old_tags):
                 findings.append(
                     Finding(
                         "ERROR",
-                        f"duplicate source text {source!r}; first defined at record {old_record}",
+                        f"duplicate source text {source!r}; "
+                        f"first defined at record {old_record}",
                         record_num,
                     )
                 )
@@ -225,12 +272,17 @@ def validate_simple_csv(path: Path) -> list[Finding]:
                 findings.append(
                     Finding(
                         "ERROR",
-                        f"conflicting duplicate source text {source!r}; first defined at record {old_record}",
+                        f"conflicting duplicate source text {source!r}; "
+                        f"first defined at record {old_record}",
                         record_num,
                     )
                 )
         else:
-            seen[source] = (record_num, translation, tags)
+            seen[source] = (
+                record_num,
+                translation,
+                tags,
+            )
 
     return findings
 
@@ -239,15 +291,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate the DFI18n Japanese localization data."
     )
+
     parser.add_argument(
         "--root",
         type=Path,
         default=Path(__file__).resolve().parents[1],
         help="repository root (default: parent of tools/)",
     )
+
     args = parser.parse_args()
 
     repo_root = args.root.resolve()
+
     simple_csv = (
         repo_root
         / "dfi18n-data-ja"
@@ -264,8 +319,17 @@ def main() -> int:
 
     findings = validate_simple_csv(simple_csv)
 
-    errors = [f for f in findings if f.severity == "ERROR"]
-    warnings = [f for f in findings if f.severity == "WARNING"]
+    errors = [
+        finding
+        for finding in findings
+        if finding.severity == "ERROR"
+    ]
+
+    warnings = [
+        finding
+        for finding in findings
+        if finding.severity == "WARNING"
+    ]
 
     for finding in findings:
         print(finding.render())
@@ -284,3 +348,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+```
+
