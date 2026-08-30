@@ -19,6 +19,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 EXPECTED_HEADER = ["text", "translation", "tags"]
 TAG_RE = re.compile(r"\[([^\[:]+):([^:\]]+)\]")
 KNOWN_ALIGNMENTS = {"LEFT", "RIGHT", "CENTER"}
@@ -144,6 +149,28 @@ def validate_tags(tags: str, record_num: int) -> list[Finding]:
                     record_num,
                 )
             )
+
+    return findings
+
+
+def validate_toml_file(path: Path) -> list[Finding]:
+    findings: list[Finding] = []
+
+    text, utf8_findings = validate_utf8(path)
+    findings.extend(utf8_findings)
+
+    if text is None:
+        return findings
+
+    try:
+        tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        findings.append(
+            Finding(
+                "ERROR",
+                f"invalid TOML in {path}: {exc}",
+            )
+        )
 
     return findings
 
@@ -327,7 +354,19 @@ def main() -> int:
     findings = validate_simple_csv(simple_csv)
 
     if ruleset_dir.is_dir():
-        print(f"Ruleset validation pending: {ruleset_dir}")
+        toml_files = sorted(ruleset_dir.rglob("*.toml"))
+        print(f"Validating rulesets: {ruleset_dir}")
+
+        if not toml_files:
+            findings.append(
+                Finding(
+                    "WARNING",
+                    f"ruleset directory contains no TOML files: {ruleset_dir}",
+                )
+            )
+
+        for toml_file in toml_files:
+            findings.extend(validate_toml_file(toml_file))
     else:
         print(f"Ruleset validation skipped: directory not found: {ruleset_dir}")
 
