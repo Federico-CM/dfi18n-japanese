@@ -4,6 +4,7 @@ DFI18n Japanese localization validator.
 
 Current scope:
 - Validate dfi18n-data-ja/dfi18n-data/simple/ja.csv
+- Detect dfi18n-data-ja/dfi18n-data/rulesets/ja/
 
 This validator deliberately checks structure and project hygiene only.
 It does not attempt to judge Japanese translation quality.
@@ -309,6 +310,13 @@ def main() -> int:
         / "simple"
         / "ja.csv"
     )
+    ruleset_dir = (
+        repo_root
+        / "dfi18n-data-ja"
+        / "dfi18n-data"
+        / "rulesets"
+        / "ja"
+    )
 
     print(f"Validating: {simple_csv}")
 
@@ -317,6 +325,11 @@ def main() -> int:
         return 2
 
     findings = validate_simple_csv(simple_csv)
+
+    if ruleset_dir.is_dir():
+        print(f"Ruleset validation pending: {ruleset_dir}")
+    else:
+        print(f"Ruleset validation skipped: directory not found: {ruleset_dir}")
 
     errors = [
         finding
