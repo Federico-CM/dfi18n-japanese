@@ -153,6 +153,128 @@ def validate_tags(tags: str, record_num: int) -> list[Finding]:
     return findings
 
 
+def validate_ruleset_schema(data: object, path: Path) -> list[Finding]:
+    findings: list[Finding] = []
+
+    if not isinstance(data, dict):
+        return [
+            Finding(
+                "ERROR",
+                f"ruleset TOML root in {path} must be a table",
+            )
+        ]
+
+    allowed_top_level = {"base", "rulesets"}
+
+    for key in data:
+        if key not in allowed_top_level:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"unknown top-level field {key!r} in {path}",
+                )
+            )
+
+    if "base" in data and not isinstance(data["base"], str):
+        findings.append(
+            Finding(
+                "ERROR",
+                f"field 'base' in {path} must be a string",
+            )
+        )
+
+    if "rulesets" not in data:
+        findings.append(
+            Finding(
+                "ERROR",
+                f"required field 'rulesets' missing in {path}",
+            )
+        )
+        return findings
+
+    rulesets = data["rulesets"]
+
+    if not isinstance(rulesets, list):
+        findings.append(
+            Finding(
+                "ERROR",
+                f"field 'rulesets' in {path} must be an array",
+            )
+        )
+        return findings
+
+    allowed_entry_fields = {"name", "optional", "rules"}
+
+    for index, entry in enumerate(rulesets, start=1):
+        location = f"rulesets entry {index} in {path}"
+
+        if not isinstance(entry, dict):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"{location} must be a table",
+                )
+            )
+            continue
+
+        for key in entry:
+            if key not in allowed_entry_fields:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        f"unknown field {key!r} in {location}",
+                    )
+                )
+
+        if "name" in entry and not isinstance(entry["name"], str):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"field 'name' in {location} must be a string",
+                )
+            )
+
+        if "optional" in entry and not isinstance(entry["optional"], bool):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"field 'optional' in {location} must be a boolean",
+                )
+            )
+
+        if "rules" not in entry:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"required field 'rules' missing in {location}",
+                )
+            )
+            continue
+
+        rules = entry["rules"]
+
+        if not isinstance(rules, dict):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"field 'rules' in {location} must be a table",
+                )
+            )
+            continue
+
+        for source, translation in rules.items():
+            if not isinstance(source, str) or not isinstance(translation, str):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        f"rules in {location} must map strings to strings",
+                    )
+                )
+                break
+
+    return findings
+
+
 def validate_toml_file(path: Path) -> list[Finding]:
     findings: list[Finding] = []
 
@@ -163,7 +285,7 @@ def validate_toml_file(path: Path) -> list[Finding]:
         return findings
 
     try:
-        tomllib.loads(text)
+        data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
         findings.append(
             Finding(
@@ -171,6 +293,9 @@ def validate_toml_file(path: Path) -> list[Finding]:
                 f"invalid TOML in {path}: {exc}",
             )
         )
+        return findings
+
+    findings.extend(validate_ruleset_schema(data, path))
 
     return findings
 
