@@ -275,7 +275,7 @@ def validate_ruleset_schema(data: object, path: Path) -> list[Finding]:
     return findings
 
 
-def validate_toml_file(path: Path) -> list[Finding]:
+def validate_toml_file(path: Path, ruleset_dir: Path) -> list[Finding]:
     findings: list[Finding] = []
 
     text, utf8_findings = validate_utf8(path)
@@ -296,6 +296,25 @@ def validate_toml_file(path: Path) -> list[Finding]:
         return findings
 
     findings.extend(validate_ruleset_schema(data, path))
+
+    if isinstance(data, dict):
+        relative_path = path.relative_to(ruleset_dir)
+        parts = list(relative_path.with_suffix("").parts)
+
+        if parts[-1] == "index":
+            parts.pop()
+
+        expected_base = "::".join(parts)
+        actual_base = data.get("base", "")
+
+        if isinstance(actual_base, str) and actual_base != expected_base:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"base namespace mismatch in {path}: "
+                    f"expected {expected_base!r}, found {actual_base!r}",
+                )
+            )
 
     return findings
 
@@ -491,7 +510,7 @@ def main() -> int:
             )
 
         for toml_file in toml_files:
-            findings.extend(validate_toml_file(toml_file))
+            findings.extend(validate_toml_file(toml_file, ruleset_dir))
     else:
         print(f"Ruleset validation skipped: directory not found: {ruleset_dir}")
 
