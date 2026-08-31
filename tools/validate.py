@@ -275,6 +275,48 @@ def validate_ruleset_schema(data: object, path: Path) -> list[Finding]:
     return findings
 
 
+def validate_ruleset_identifiers(data: dict, path: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    base_namespace = data.get("base", "")
+
+    for index, entry in enumerate(data["rulesets"], start=1):
+        identifier = "::" + base_namespace
+        name = entry.get("name")
+
+        if name is not None:
+            identifier += "::" + name
+
+        if identifier != "::" and identifier.endswith("::"):
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"ruleset identifier {identifier!r} in rulesets entry "
+                    f"{index} in {path} cannot end with '::'",
+                )
+            )
+            continue
+
+        invalid_colons = next(
+            (
+                match.group(0)
+                for match in re.finditer(r":+", identifier)
+                if len(match.group(0)) != 2
+            ),
+            None,
+        )
+        if invalid_colons is not None:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"ruleset identifier {identifier!r} in rulesets entry "
+                    f"{index} in {path} contains invalid consecutive colons "
+                    f"{invalid_colons!r}",
+                )
+            )
+
+    return findings
+
+
 def validate_toml_file(
     path: Path,
     ruleset_dir: Path,
@@ -305,6 +347,9 @@ def validate_toml_file(
         finding.severity == "ERROR"
         for finding in schema_findings
     )
+    if schema_valid:
+        findings.extend(validate_ruleset_identifiers(data, path))
+
     is_root_base = (
         schema_valid
         and isinstance(data, dict)
