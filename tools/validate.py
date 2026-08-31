@@ -275,14 +275,17 @@ def validate_ruleset_schema(data: object, path: Path) -> list[Finding]:
     return findings
 
 
-def validate_toml_file(path: Path, ruleset_dir: Path) -> list[Finding]:
+def validate_toml_file(
+    path: Path,
+    ruleset_dir: Path,
+) -> tuple[list[Finding], bool]:
     findings: list[Finding] = []
 
     text, utf8_findings = validate_utf8(path)
     findings.extend(utf8_findings)
 
     if text is None:
-        return findings
+        return findings, False
 
     try:
         data = tomllib.loads(text)
@@ -293,9 +296,20 @@ def validate_toml_file(path: Path, ruleset_dir: Path) -> list[Finding]:
                 f"invalid TOML in {path}: {exc}",
             )
         )
-        return findings
+        return findings, False
 
-    findings.extend(validate_ruleset_schema(data, path))
+    schema_findings = validate_ruleset_schema(data, path)
+    findings.extend(schema_findings)
+
+    schema_valid = not any(
+        finding.severity == "ERROR"
+        for finding in schema_findings
+    )
+    is_root_base = (
+        schema_valid
+        and isinstance(data, dict)
+        and "base" not in data
+    )
 
     if isinstance(data, dict):
         relative_path = path.relative_to(ruleset_dir)
@@ -316,7 +330,7 @@ def validate_toml_file(path: Path, ruleset_dir: Path) -> list[Finding]:
                 )
             )
 
-    return findings
+    return findings, is_root_base
 
 
 def validate_simple_csv(path: Path) -> list[Finding]:
@@ -509,8 +523,26 @@ def main() -> int:
                 )
             )
 
+        root_base_file: Path | None = None
+
         for toml_file in toml_files:
-            findings.extend(validate_toml_file(toml_file, ruleset_dir))
+            toml_findings, is_root_base = validate_toml_file(
+                toml_file,
+                ruleset_dir,
+            )
+            findings.extend(toml_findings)
+
+            if is_root_base:
+                if root_base_file is not None:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            f"multiple root-base files found: "
+                            f"{root_base_file} and {toml_file}",
+                        )
+                    )
+                else:
+                    root_base_file = toml_file
     else:
         print(f"Ruleset validation skipped: directory not found: {ruleset_dir}")
 
