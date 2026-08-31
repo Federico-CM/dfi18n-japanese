@@ -26,6 +26,7 @@ except ModuleNotFoundError:
 
 EXPECTED_HEADER = ["text", "translation", "tags"]
 TAG_RE = re.compile(r"\[([^\[:]+):([^:\]]+)\]")
+REFERENCE_RE = re.compile(r"\{([^\{\}]+)\}")
 KNOWN_ALIGNMENTS = {"LEFT", "RIGHT", "CENTER"}
 
 
@@ -275,6 +276,90 @@ def validate_ruleset_schema(data: object, path: Path) -> list[Finding]:
     return findings
 
 
+
+def to_canonical_reference(identifier: str, base_namespace: str) -> str:
+    if identifier.startswith("::"):
+        return identifier
+
+    if identifier.startswith("%"):
+        parts = identifier.split(":", 1)
+        parts.insert(1, base_namespace)
+        return ":".join(parts)
+
+    if not base_namespace:
+        return f"::{identifier}"
+
+    return f"::{base_namespace}::{identifier}"
+
+
+def reference_identifier_is_valid(identifier: str) -> bool:
+    if identifier.startswith("%"):
+        return ":" in identifier
+
+    if identifier != "::" and identifier.endswith("::"):
+        return False
+
+    return all(
+        len(match.group(0)) == 2
+        for match in re.finditer(r":+", identifier)
+    )
+
+
+def parse_source_references(
+    source: str,
+    base_namespace: str,
+) -> list[str] | None:
+    # Rust parse_tokens() first rejects mismatched total brace counts.
+    if source.count("{") != source.count("}"):
+        return None
+
+    references: list[str] = []
+
+    for match in REFERENCE_RE.finditer(source):
+        reference = to_canonical_reference(
+            match.group(1),
+            base_namespace,
+        )
+
+        # Rust validates every canonical reference before duplicate checking.
+        # Token/identifier parse errors will be handled by a later validator
+        # increment, so do not emit a duplicate finding in that case.
+        if not reference_identifier_is_valid(reference):
+            return None
+
+        references.append(reference)
+
+    return references
+
+
+def validate_duplicate_source_references(
+    data: dict,
+    path: Path,
+) -> list[Finding]:
+    findings: list[Finding] = []
+    base_namespace = data.get("base", "")
+
+    for index, entry in enumerate(data["rulesets"], start=1):
+        for source in entry["rules"]:
+            references = parse_source_references(
+                source,
+                base_namespace,
+            )
+
+            if references is None:
+                continue
+
+            if len(references) != len(set(references)):
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        f"source rule {source!r} in rulesets entry "
+                        f"{index} in {path} has duplicate references",
+                    )
+                )
+
+    return findings
+
 def validate_ruleset_identifiers(data: dict, path: Path) -> list[Finding]:
     findings: list[Finding] = []
     base_namespace = data.get("base", "")
@@ -348,7 +433,17 @@ def validate_toml_file(
         for finding in schema_findings
     )
     if schema_valid:
-        findings.extend(validate_ruleset_identifiers(data, path))
+        identifier_findings = validate_ruleset_identifiers(data, path)
+        findings.extend(identifier_findings)
+
+        identifiers_valid = not any(
+            finding.severity == "ERROR"
+            for finding in identifier_findings
+        )
+        if identifiers_valid:
+            findings.extend(
+                validate_duplicate_source_references(data, path)
+            )
 
     is_root_base = (
         schema_valid
