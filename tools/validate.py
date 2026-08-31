@@ -398,16 +398,99 @@ def validate_translated_references(
     return findings
 
 
+def canonical_ruleset_identifier(
+    base_namespace: str,
+    name: str | None,
+) -> str:
+    identifier = "::" + base_namespace
+
+    if name is not None:
+        identifier += "::" + name
+
+    return identifier
+
+
+def collect_ruleset_identifiers_and_source_references(
+    data: dict,
+    path: Path,
+) -> tuple[set[str], list[tuple[str, str, int, Path]]]:
+    identifiers: set[str] = set()
+    source_references: list[tuple[str, str, int, Path]] = []
+
+    base_namespace = data.get("base", "")
+
+    for index, entry in enumerate(data["rulesets"], start=1):
+        identifier = canonical_ruleset_identifier(
+            base_namespace,
+            entry.get("name"),
+        )
+        identifiers.add(identifier)
+
+        for source in entry["rules"]:
+            references = parse_references(
+                source,
+                base_namespace,
+            )
+
+            if references is None:
+                continue
+
+            for reference in references:
+                source_references.append(
+                    (
+                        reference,
+                        source,
+                        index,
+                        path,
+                    )
+                )
+
+    return identifiers, source_references
+
+
+def validate_source_reference_resolution(
+    ruleset_files: list[tuple[Path, dict]],
+) -> list[Finding]:
+    findings: list[Finding] = []
+    identifiers: set[str] = set()
+    source_references: list[tuple[str, str, int, Path]] = []
+
+    for path, data in ruleset_files:
+        file_identifiers, file_references = (
+            collect_ruleset_identifiers_and_source_references(
+                data,
+                path,
+            )
+        )
+        identifiers.update(file_identifiers)
+        source_references.extend(file_references)
+
+    for reference, source, index, path in source_references:
+        if reference.startswith("%"):
+            continue
+
+        if reference not in identifiers:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"source reference {reference!r} in rule {source!r} "
+                    f"in rulesets entry {index} in {path} "
+                    f"does not resolve to an existing ruleset",
+                )
+            )
+
+    return findings
+
+
 def validate_ruleset_identifiers(data: dict, path: Path) -> list[Finding]:
     findings: list[Finding] = []
     base_namespace = data.get("base", "")
 
     for index, entry in enumerate(data["rulesets"], start=1):
-        identifier = "::" + base_namespace
-        name = entry.get("name")
-
-        if name is not None:
-            identifier += "::" + name
+        identifier = canonical_ruleset_identifier(
+            base_namespace,
+            entry.get("name"),
+        )
 
         if identifier != "::" and identifier.endswith("::"):
             findings.append(
@@ -443,14 +526,14 @@ def validate_ruleset_identifiers(data: dict, path: Path) -> list[Finding]:
 def validate_toml_file(
     path: Path,
     ruleset_dir: Path,
-) -> tuple[list[Finding], bool]:
+) -> tuple[list[Finding], bool, dict | None]:
     findings: list[Finding] = []
 
     text, utf8_findings = validate_utf8(path)
     findings.extend(utf8_findings)
 
     if text is None:
-        return findings, False
+        return findings, False, None
 
     try:
         data = tomllib.loads(text)
@@ -461,7 +544,7 @@ def validate_toml_file(
                 f"invalid TOML in {path}: {exc}",
             )
         )
-        return findings, False
+        return findings, False, None
 
     schema_findings = validate_ruleset_schema(data, path)
     findings.extend(schema_findings)
@@ -511,7 +594,16 @@ def validate_toml_file(
                 )
             )
 
-    return findings, is_root_base
+    valid_data = (
+        data
+        if not any(
+            finding.severity == "ERROR"
+            for finding in findings
+        )
+        else None
+    )
+
+    return findings, is_root_base, valid_data
 
 
 def validate_simple_csv(path: Path) -> list[Finding]:
@@ -705,13 +797,17 @@ def main() -> int:
             )
 
         root_base_file: Path | None = None
+        valid_ruleset_files: list[tuple[Path, dict]] = []
 
         for toml_file in toml_files:
-            toml_findings, is_root_base = validate_toml_file(
+            toml_findings, is_root_base, valid_data = validate_toml_file(
                 toml_file,
                 ruleset_dir,
             )
             findings.extend(toml_findings)
+
+            if valid_data is not None:
+                valid_ruleset_files.append((toml_file, valid_data))
 
             if is_root_base:
                 if root_base_file is not None:
@@ -724,6 +820,10 @@ def main() -> int:
                     )
                 else:
                     root_base_file = toml_file
+
+        findings.extend(
+            validate_source_reference_resolution(valid_ruleset_files)
+        )
     else:
         print(f"Ruleset validation skipped: directory not found: {ruleset_dir}")
 
