@@ -305,17 +305,17 @@ def reference_identifier_is_valid(identifier: str) -> bool:
     )
 
 
-def parse_source_references(
-    source: str,
+def parse_references(
+    text: str,
     base_namespace: str,
 ) -> list[str] | None:
     # Rust parse_tokens() first rejects mismatched total brace counts.
-    if source.count("{") != source.count("}"):
+    if text.count("{") != text.count("}"):
         return None
 
     references: list[str] = []
 
-    for match in REFERENCE_RE.finditer(source):
+    for match in REFERENCE_RE.finditer(text):
         reference = to_canonical_reference(
             match.group(1),
             base_namespace,
@@ -341,7 +341,7 @@ def validate_duplicate_source_references(
 
     for index, entry in enumerate(data["rulesets"], start=1):
         for source in entry["rules"]:
-            references = parse_source_references(
+            references = parse_references(
                 source,
                 base_namespace,
             )
@@ -359,6 +359,44 @@ def validate_duplicate_source_references(
                 )
 
     return findings
+
+
+def validate_translated_references(
+    data: dict,
+    path: Path,
+) -> list[Finding]:
+    findings: list[Finding] = []
+    base_namespace = data.get("base", "")
+
+    for index, entry in enumerate(data["rulesets"], start=1):
+        for source, translation in entry["rules"].items():
+            source_references = parse_references(
+                source,
+                base_namespace,
+            )
+            translated_references = parse_references(
+                translation,
+                base_namespace,
+            )
+
+            if source_references is None or translated_references is None:
+                continue
+
+            source_reference_set = set(source_references)
+
+            for reference in translated_references:
+                if reference not in source_reference_set:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            f"translated reference {reference!r} in rule "
+                            f"{translation!r} in rulesets entry {index} "
+                            f"in {path} does not exist in source rule {source!r}",
+                        )
+                    )
+
+    return findings
+
 
 def validate_ruleset_identifiers(data: dict, path: Path) -> list[Finding]:
     findings: list[Finding] = []
@@ -443,6 +481,9 @@ def validate_toml_file(
         if identifiers_valid:
             findings.extend(
                 validate_duplicate_source_references(data, path)
+            )
+            findings.extend(
+                validate_translated_references(data, path)
             )
 
     is_root_base = (
