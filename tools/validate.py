@@ -322,14 +322,60 @@ def parse_references(
         )
 
         # Rust validates every canonical reference before duplicate checking.
-        # Token/identifier parse errors will be handled by a later validator
-        # increment, so do not emit a duplicate finding in that case.
+        # Token/identifier parse errors are reported separately, so do not
+        # emit secondary reference findings in that case.
         if not reference_identifier_is_valid(reference):
             return None
 
         references.append(reference)
 
     return references
+
+
+def validate_rule_token_syntax(
+    data: dict,
+    path: Path,
+) -> list[Finding]:
+    findings: list[Finding] = []
+    base_namespace = data.get("base", "")
+
+    for index, entry in enumerate(data["rulesets"], start=1):
+        for source, translation in entry["rules"].items():
+            for side, value in (
+                ("source", source),
+                ("translated", translation),
+            ):
+                left_braces = value.count("{")
+                right_braces = value.count("}")
+
+                if left_braces != right_braces:
+                    findings.append(
+                        Finding(
+                            "ERROR",
+                            f"{side} rule {value!r} in rulesets entry {index} "
+                            f"in {path} has mismatched braces: "
+                            f"{left_braces} '{{' and {right_braces} '}}'",
+                        )
+                    )
+                    continue
+
+                for match in REFERENCE_RE.finditer(value):
+                    reference = to_canonical_reference(
+                        match.group(1),
+                        base_namespace,
+                    )
+
+                    if not reference_identifier_is_valid(reference):
+                        findings.append(
+                            Finding(
+                                "ERROR",
+                                f"{side} rule {value!r} in rulesets entry "
+                                f"{index} in {path} contains invalid "
+                                f"reference identifier {reference!r}",
+                            )
+                        )
+
+    return findings
 
 
 def validate_duplicate_source_references(
@@ -562,6 +608,9 @@ def validate_toml_file(
             for finding in identifier_findings
         )
         if identifiers_valid:
+            findings.extend(
+                validate_rule_token_syntax(data, path)
+            )
             findings.extend(
                 validate_duplicate_source_references(data, path)
             )
