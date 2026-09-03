@@ -1,0 +1,10 @@
+base = "items"
+
+[[rulesets]]
+[rulesets.rules]
+"{%item_designation:main}" = "{%item_designation:main}"
+
+[[rulesets]]
+name = "main"
+[rulesets.rules]
+"{anvil}" = "{anvil}"

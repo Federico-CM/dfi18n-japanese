@@ -1,0 +1,6 @@
+base = "materials"
+
+[[rulesets]]
+name = "adjective"
+[rulesets.rules]
+"{state::adjective}" = "{state::adjective}"

@@ -1,0 +1,18 @@
+base = "materials::state"
+
+[[rulesets]]
+name = "adjective"
+[rulesets.rules]
+"{shared}" = "{shared}"
+
+[[rulesets]]
+name = "shared"
+[rulesets.rules]
+"{shared::main}" = "{shared::main}"
+
+[[rulesets]]
+name = "shared::main"
+[rulesets.rules]
+"iron" = "鉄"
+"steel" = "鋼"
+"adamantine" = "精金"
