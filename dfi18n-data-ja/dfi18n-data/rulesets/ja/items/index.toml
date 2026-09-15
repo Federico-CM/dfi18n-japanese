@@ -8,3 +8,4 @@ base = "items"
 name = "main"
 [rulesets.rules]
 "{anvil}" = "{anvil}"
+"{bed}" = "{bed}"
