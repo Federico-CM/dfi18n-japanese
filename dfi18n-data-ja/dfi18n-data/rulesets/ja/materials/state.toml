@@ -1,8 +1,34 @@
 base = "materials::state"
 
 [[rulesets]]
+[rulesets.rules]
+"gold dust" = "金粉"
+"metal" = "金属"
+"native gold dust" = "自然金粉"
+"fat" = "脂肪"
+"grease" = "油脂"
+"cartilage" = "軟骨"
+"cheese" = "チーズ"
+"wood" = "木材"
+"sponge" = "海綿"
+"saguaro rib wood" = "サワロ肋材"
+"oak" = "オーク"
+"birch" = "カバノキ"
+"{shared}" = "{shared}"
+
+[[rulesets]]
 name = "adjective"
 [rulesets.rules]
+"fatty" = "脂肪"
+"greasy" = "油脂"
+"cartilaginous" = "軟骨"
+"cheesy" = "チーズ"
+"wooden" = "木材"
+"spongy" = "海綿"
+"saguaro rib" = "サワロ肋材"
+"oaken" = "オーク材"
+"birchen" = "カバ材"
+"ashen" = "トネリコ材"
 "{shared}" = "{shared}"
 
 [[rulesets]]
@@ -38,7 +64,7 @@ name = "shared::main"
 "apricot wood" = "アンズ材"
 "aquamarine" = "アクアマリン"
 "artichoke wine" = "アーティチョークワイン"
-"ash" = "トネリコ材"
+"ash" = "灰"
 "ash glaze" = "灰釉"
 "aventurine" = "アベンチュリン"
 "avocado wood" = "アボカド材"
