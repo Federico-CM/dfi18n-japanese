@@ -1,0 +1,19 @@
+base = "items::door"
+
+[[rulesets]]
+[rulesets.rules]
+"{^0}{main}" = "{^0}{main}"
+
+[[rulesets]]
+name = "^0"
+optional = true
+[rulesets.rules]
+"{::materials::adjective} " = "{::materials::adjective}の"
+
+[[rulesets]]
+name = "main"
+[rulesets.rules]
+"door" = "扉"
+"doors" = "扉"
+"portal" = "扉"
+"portals" = "扉"
