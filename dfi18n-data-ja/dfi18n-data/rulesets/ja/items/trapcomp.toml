@@ -1,0 +1,68 @@
+base = "items::trapcomp"
+
+[[rulesets]]
+[rulesets.rules]
+"{default}" = "{default}"
+"{singular}" = "{singular}"
+"{plural}" = "{plural}"
+
+[[rulesets]]
+name = "default"
+[rulesets.rules]
+"{default::^0}{default::main}" = "{default::^0}{default::main}"
+
+[[rulesets]]
+name = "default::^0"
+optional = true
+[rulesets.rules]
+"{::materials::adjective} " = "{::materials::adjective}の"
+
+[[rulesets]]
+name = "default::main"
+[rulesets.rules]
+"trap component" = "罠部品"
+"trap components" = "罠部品"
+
+[[rulesets]]
+name = "^prefix"
+optional = true
+[rulesets.rules]
+"giant " = "巨大な"
+"enormous " = "大きな"
+"spiked " = "とげの付いた"
+"large, serrated " = "大型で鋸歯状の"
+"menacing " = "威圧的な"
+
+[[rulesets]]
+name = "^material"
+optional = true
+[rulesets.rules]
+"{::materials::adjective} " = "{::materials::adjective}の"
+
+[[rulesets]]
+name = "singular"
+[rulesets.rules]
+"{^prefix}{^material}{singular::main}" = "{^prefix}{^material}{singular::main}"
+
+[[rulesets]]
+name = "plural"
+[rulesets.rules]
+"{^prefix}{^material}{plural::main}" = "{^prefix}{^material}{plural::main}"
+
+[[rulesets]]
+name = "singular::main"
+[rulesets.rules]
+"axe blade" = "斧の刃"
+"corkscrew" = "スクリュー"
+"ball" = "ボール"
+"disc" = "円盤"
+"spike" = "スパイク"
+
+[[rulesets]]
+name = "plural::main"
+[rulesets.rules]
+"axe blades" = "斧の刃"
+"corkscrews" = "スクリュー"
+"balls" = "ボール"
+"discs" = "円盤"
+"spikes" = "スパイク"
