@@ -1,0 +1,10 @@
+base = "items::boulder"
+
+[[rulesets]]
+[rulesets.rules]
+"stones" = "石"
+"gold nuggets" = "金塊"
+"silver nuggets" = "銀塊"
+"copper nuggets" = "銅塊"
+"platinum nuggets" = "白金塊"
+"{::materials::state}" = "{::materials::state}"
