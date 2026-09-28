@@ -1,0 +1,12 @@
+base = "items::bar"
+
+[[rulesets]]
+[rulesets.rules]
+"bars" = "延べ棒"
+"metal bars" = "金属の延べ棒"
+"{::materials::state} bars" = "{::materials::state}の延べ棒"
+"{::materials::state} wafers" = "{::materials::state}の薄片"
+"charcoal" = "木炭"
+"coke" = "コークス"
+"refined coal" = "精製炭"
+"{::materials::state}" = "{::materials::state}"
