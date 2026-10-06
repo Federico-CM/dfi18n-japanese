@@ -1,8 +1,8 @@
-# DFI18n Japanese Localization PoC — Installation
+# DFI18n Japanese Localization — Installation
 
 ## Quick Installation
 
-1. Open a terminal in the directory containing this package and run:
+1. Close Dwarf Fortress, then open a terminal in the directory containing this package and run:
 
    ```
    ./quick_install.sh
@@ -18,13 +18,13 @@
 
 4. Check the Dwarf Fortress interface.
 
-The proof-of-concept translates:
+For a quick installation check, look for this translated interface label:
 
 ```
 Settings → 設定
 ```
 
-If the game displays `設定`, the installation is working.
+If the game displays `設定`, the interface translation and Japanese rendering are working. You can also check supported item names on the embark screen or in a fortress.
 
 If Japanese text does not appear, or if `quick_install.sh` reports an error or warning, continue with the detailed installation and troubleshooting information below.
 
@@ -33,7 +33,7 @@ If Japanese text does not appear, or if `quick_install.sh` reports an error or w
 
 # Detailed Installation and Troubleshooting
 
-This package is a proof-of-concept Japanese localization for Dwarf Fortress using DFI18n.
+This package is an in-progress, partial Japanese localization for Dwarf Fortress using DFI18n.
 
 Known working configuration:
 
@@ -42,9 +42,9 @@ Known working configuration:
 - Linux x86-64
 - Tested on Ubuntu 22.04
 
-Current proof-of-concept translation:
+Current coverage includes Japanese material names and a growing set of item names, including furniture, containers, jewelry, bars, stones, logs, rough gems, cut gems, and large gems. The `Settings` interface label is also translated as `設定`.
 
-    Settings → 設定
+Coverage varies by item type and material. Many other parts of the game still appear in English.
 
 ## Package contents
 
@@ -55,7 +55,7 @@ The package contains two mods:
 
 `dfi18n` is the DFI18n translation engine.
 
-`dfi18n-data-ja` contains the Japanese localization data, including the Japanese font and translation dictionary.
+`dfi18n-data-ja` contains the Japanese font, simple translation dictionary, material vocabulary, and item-name translation rules.
 
 The included `libdfi18n.so` is a Linux x86-64 native library built and tested for the configuration listed above.
 
@@ -72,7 +72,7 @@ DFHack must be running with Dwarf Fortress.
 
 DFI18n must be installed into the Dwarf Fortress base-data `mods` directory used by DFHack.
 
-For a standard Linux installation tested with this PoC, this is:
+For the standard Linux installation tested with this package, this is:
 
     ~/.local/share/Bay 12 Games/Dwarf Fortress/mods/
 
@@ -128,7 +128,9 @@ Run:
     test -f "$BASE/mods/dfi18n-data-ja/dfi18n-data/fonts/ja/NotoSansMonoCJKjp-Regular.otf" && echo "OK Japanese font"
     test -f "$BASE/mods/dfi18n-data-ja/dfi18n-data/simple/ja.csv" && echo "OK Japanese dictionary"
 
-All seven checks should print `OK`.
+    test -f "$BASE/mods/dfi18n-data-ja/dfi18n-data/rulesets/ja/items/index.toml" && echo "OK Japanese item rules"
+
+All eight checks should print `OK`. These checks confirm that the listed files exist; check translation and rendering in game after enabling DFI18n.
 
 ## Enable DFI18n
 
@@ -144,7 +146,7 @@ On the known-working configuration this completes successfully.
 
 Open the relevant Dwarf Fortress UI menu.
 
-The proof-of-concept dictionary contains:
+The simple dictionary includes this interface label:
 
     Settings → 設定
 
@@ -155,6 +157,14 @@ If the installation is working correctly, `Settings` should therefore appear as:
 in the actual Dwarf Fortress interface.
 
 Correct Japanese rendering in the Dwarf Fortress UI is the important test.
+
+Also inspect supported item names on the embark screen or in a fortress. Examples checked with the translation tool and in game include:
+
+    pig iron bars → 銑鉄の延べ棒
+    rough rubies → ルビーの原石
+    pear cut onyxes → ペアカットのオニキス
+
+Some item types and material combinations remain untranslated.
 
 The DFHack terminal itself may display Japanese text as mojibake even when translation and in-game rendering are working correctly.
 
@@ -178,7 +188,7 @@ From the DFHack console:
 
     dfi18n enable
 
-## Remove the PoC
+## Remove the localization
 
 Close Dwarf Fortress.
 
@@ -193,14 +203,20 @@ This does not remove the portable source/package directory.
 
 ## Japanese localization files
 
-The main Japanese dictionary is:
+The Japanese simple dictionary for interface labels is:
 
     dfi18n-data-ja/dfi18n-data/simple/ja.csv
 
-The current PoC entry is:
+One example entry is:
 
     text,translation,tags
     Settings,設定,[ALIGNMENT:CENTER]
+
+The Japanese translation rules are under:
+
+    dfi18n-data-ja/dfi18n-data/rulesets/ja/
+
+These include material vocabulary in `materials/`, item-name rules in `items/`, and gem names, cuts, and shapes in `gems/`.
 
 The Japanese font is:
 
@@ -214,6 +230,7 @@ and currently loads:
 
     [FONT:fonts]
     [DATA:simple:simple]
+    [DATA:rulesets:rulesets]
 
 ## Compatibility
 
