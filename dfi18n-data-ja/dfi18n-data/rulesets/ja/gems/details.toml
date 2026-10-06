@@ -1,0 +1,46 @@
+base = "gems::details"
+
+[[rulesets]]
+[rulesets.rules]
+"gizzard stone" = "胃石"
+"gizzard stones" = "胃石"
+"smooth gizzard stone" = "滑らかな胃石"
+"smooth gizzard stones" = "滑らかな胃石"
+"{cut} {::gems}" = "{cut}の{::gems}"
+"{cut} {::materials::state} gems" = "{cut}の{::materials::state}宝石"
+"{shape} {::gems} cabochons" = "{::gems}の{shape}カボション"
+"{shape} {::gems} cabochon" = "{::gems}の{shape}カボション"
+"{shape} {::materials::state} cabochons" = "{::materials::state}の{shape}カボション"
+"{shape} {::materials::state} cabochon" = "{::materials::state}の{shape}カボション"
+"{::materials::state} cabochons" = "{::materials::state}のカボション"
+"{::materials::state} cabochon" = "{::materials::state}のカボション"
+
+[[rulesets]]
+name = "cut"
+[rulesets.rules]
+"point cut" = "ポイントカット"
+"table cut" = "テーブルカット"
+"single cut" = "シングルカット"
+"rose cut" = "ローズカット"
+"briolette cut" = "ブリオレットカット"
+"emerald cut" = "エメラルドカット"
+"marquise cut" = "マーキスカット"
+"oval cut" = "オーバルカット"
+"pear cut" = "ペアカット"
+"square brilliant cut" = "スクエアブリリアントカット"
+"radiant cut" = "ラディアントカット"
+"trillion cut" = "トリリアントカット"
+"round brilliant cut" = "ラウンドブリリアントカット"
+"baguette cut" = "バゲットカット"
+"tapered baguette cut" = "テーパードバゲットカット"
+"cushion cut" = "クッションカット"
+"octagon cut" = "オクタゴンカット"
+"square cut" = "スクエアカット"
+
+[[rulesets]]
+name = "shape"
+[rulesets.rules]
+"round" = "円形"
+"oval" = "楕円形"
+"rectangular" = "長方形"
+"cushion" = "クッション形"

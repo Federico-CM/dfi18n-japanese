@@ -1,0 +1,11 @@
+base = "items::smallgem"
+
+[[rulesets]]
+[rulesets.rules]
+"gems" = "宝石"
+"cut gems" = "宝石"
+"cut green glass gems" = "緑色ガラスの宝石"
+"cut clear glass gems" = "透明ガラスの宝石"
+"cut crystal glass gems" = "クリスタルガラスの宝石"
+"{::gems}" = "{::gems}"
+"{::gems::details}" = "{::gems::details}"

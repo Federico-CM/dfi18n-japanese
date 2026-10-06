@@ -1,0 +1,9 @@
+base = "items::rough"
+
+[[rulesets]]
+[rulesets.rules]
+"rough gems" = "宝石の原石"
+"raw green glass" = "未加工の緑色ガラス"
+"raw clear glass" = "未加工の透明ガラス"
+"raw crystal glass" = "未加工のクリスタルガラス"
+"rough {::gems}" = "{::gems}の原石"

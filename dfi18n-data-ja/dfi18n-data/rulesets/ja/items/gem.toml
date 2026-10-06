@@ -1,0 +1,20 @@
+base = "items::gem"
+
+[[rulesets]]
+[rulesets.rules]
+"{prefix}{main}" = "{prefix}{main}"
+
+[[rulesets]]
+name = "prefix"
+optional = true
+[rulesets.rules]
+"large " = "大きな"
+"perfect " = "完璧な"
+
+[[rulesets]]
+name = "main"
+[rulesets.rules]
+"gem" = "宝石"
+"gems" = "宝石"
+"{::gems}" = "{::gems}"
+"{::gems::details}" = "{::gems::details}"
